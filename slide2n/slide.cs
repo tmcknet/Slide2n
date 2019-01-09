@@ -15,8 +15,8 @@ namespace slide2n
         // ※4Bit一致長コードを非線形にしてゲーム用データに最適化するテスト
         // （最長一致長が大幅に増加しているので注意すること）
 
-        private const int N = (4096); // 環状バッファの大きさ
-        private const int F = (64); // 最長一致長（オリジナル：18）
+        private const int N = 4096; // 環状バッファの大きさ
+        private const int F = 64; // 最長一致長（オリジナル：18）
         private const int NIL = N; // 木の末端
 
         long outcount = 0;				        // 出力バイト数カウンタ
@@ -29,7 +29,7 @@ namespace slide2n
         // code(4bit)                             0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
         //static const int MatchLenSizeNormal[] =  {  3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18 }; // オリジナル
         //#define MATCHLEN_TABLE_SIZE (16)
-        static readonly int[] MatchLenSizeTable = new int[] { 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 18, 21, 27, 41, 64 }; // 微調整版
+        static readonly int[] MatchLenSizeTable = new int[] { 3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 18, 21, 27, 41, F }; // 微調整版
 
         // 一致長符号の生成
 
@@ -71,7 +71,7 @@ namespace slide2n
 
         // --------------------------------------------------------------------------------------
 
-        int matchpos, matchlen;  /* 最長一致位置, 一致長 */
+        int matchpos, matchlen;  // 最長一致位置, 一致長
 
         /// <summary>
         /// 節 r を木に挿入
@@ -81,13 +81,10 @@ namespace slide2n
         void insert_node(int r)
         {
             int i, p, cmp;
-            //unsigned char *key;
             int key;
 
             cmp = 1;
-            //key = &text[r];
             key = r;
-            //p = N + 1 + key[0];
             p = N + 1 + text[key];
 
             rson[r] = lson[r] = NIL;
@@ -120,7 +117,6 @@ namespace slide2n
 
                 for (i = 1; i < F; i++)
                 {
-                    //if ((cmp = key[i] - text[p + i]) != 0)
                     if ((cmp = text[key + i] - text[p + i]) != 0)
                         break;
                 }
@@ -159,7 +155,7 @@ namespace slide2n
             int q;
 
             if (dad[p] == NIL)
-                return;  /* 見つからない */
+                return;  // 見つからない
 
             if (rson[p] == NIL)
                 q = lson[p];
@@ -209,13 +205,12 @@ namespace slide2n
         public void EncodeFile(FileStream infile, FileStream outfile)
         {
             int len, r, s, lastmatchlen, codeptr;
-            //unsigned char code[17], mask;
             byte c, mask;
             byte[] code = new byte[100];
             long incount = 0, printcount = 0, cr;
-            int matchlencode; //unsigned char matchlencode;
+            int matchlencode;
 
-            init_tree();  /* 木を初期化 */
+            init_tree();
 
             code[0] = 0;
             codeptr = mask = 1;
@@ -223,7 +218,7 @@ namespace slide2n
             r = N - F;
 
             for (int i = s; i < r; i++)
-                text[i] = 0;  /* バッファを初期化 */
+                text[i] = 0;  // バッファを初期化
 
             using (BinaryReader br = new BinaryReader(infile))
             {
@@ -282,7 +277,6 @@ namespace slide2n
                         {
                             for (int i = 0; i < codeptr; i++)
                             {
-                                //fputc(code[i], outfile);
                                 bw.Write(code[i]);
                             }
 
@@ -296,7 +290,6 @@ namespace slide2n
                         int count;
                         for (count = 0; count < lastmatchlen; count++)
                         {
-                            //if ((c = fgetc(infile)) == EOF) break;
                             try
                             {
                                 c = br.ReadByte();
@@ -325,7 +318,6 @@ namespace slide2n
 
                         if ((incount += count) > printcount)
                         {
-                            //printf("%12lu\r", incount);
                             Console.Write("{0}\r", incount);
                             printcount += 1024;
                         }
@@ -346,19 +338,18 @@ namespace slide2n
                     {
                         for (int i = 0; i < codeptr; i++)
                         {
-                            //fputc(code[i], outfile);
                             bw.Write(code[i]);
                         }
 
                         outcount += codeptr;
                     }
 
-                    Console.Write("In : {0} bytes\n", incount);  /* 結果報告 */
+                    Console.Write("In : {0} bytes\n", incount);  // 結果報告
                     Console.Write("Out: {0} bytes\n", outcount);
 
                     if (incount != 0)
                     {
-                        //圧縮比を求めて報告
+                        // 圧縮比を求めて報告
                         cr = (1000 * outcount + incount / 2) / incount;
                         Console.Write("Out/In: {0}.{1}\n", cr / 1000, cr % 1000);
                     }
@@ -388,11 +379,8 @@ namespace slide2n
             {
                 using (BinaryWriter bw = new BinaryWriter(outfile))
                 {
-
                     while (true)
                     {
-                        //if ((c = fgetc(infile)) == EOF) 
-                        //    goto decode_end;
                         try
                         {
                             c = br.ReadByte();
@@ -428,11 +416,7 @@ namespace slide2n
                                     throw e;
                                 }
 
-                                //fputc(c, outfile);
                                 bw.Write(c);
-
-                                //if (--size <= 0)
-                                //    goto decode_end;
 
                                 text[r++] = c;
                                 r &= (N - 1);
@@ -440,11 +424,6 @@ namespace slide2n
                             else
                             {
                                 int i, j;
-
-                                //if ((i = fgetc(infile)) == EOF)
-                                //    goto decode_end;
-                                //if ((j = fgetc(infile)) == EOF)
-                                //    goto decode_end;
 
                                 try
                                 {
@@ -468,11 +447,8 @@ namespace slide2n
                                 for (int k = 0; k < j; k++)
                                 {
                                     c = text[(i + k) & (N - 1)];
-                                    //fputc(c, outfile);
-                                    bw.Write(c);
 
-                                    //if (--size == 0)
-                                    //    goto decode_end;
+                                    bw.Write(c);
 
                                     text[r++] = c;
                                     r &= (N - 1);
@@ -522,7 +498,6 @@ namespace slide2n
                     {
                         if ((flags & 0x01) != 0)
                         {
-                            //*outdata++ = *indata++;
                             ms.WriteByte(data[index++]);
                             if (--size == 0) goto decode_end;
 
@@ -531,15 +506,14 @@ namespace slide2n
                         }
                         else
                         {
-                            int i = data[index++]; //*indata++;
-                            int j = data[index++]; //*indata++;
+                            int i = data[index++];
+                            int j = data[index++];
 
                             i |= ((j & 0xf0) << 4);
                             j = MatchLenSizeTable[j & 0x0f];
 
                             for (int k = 0; k < j; k++)
                             {
-                                //*outdata++ = text[(i+k) & (N-1)];
                                 ms.WriteByte(text[(i + k) & (N - 1)]);
                                 if (--size == 0) goto decode_end;
 
